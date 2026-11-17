@@ -4,7 +4,7 @@ Organize os slides do template (`GS_2026_2_-_2TSCO_template.pptx`) seguindo a l�
 
 ### 1. Identificação e Nome do Projeto (Slides 1 e 2)
 
-- **Sugestão de Nome:** SaúdePrev ou FluxoSUS (acompanhado de um logotipo limpo)[cite: 2].
+- **Nome do projeto:** FluxSUS (acompanhado de um logotipo limpo)[cite: 2].
 - **Identificação:** Informar a turma, listar os integrantes em ordem alfabética (Nome completo + RM) e destacar o aluno responsável[cite: 2].
 
 ### 2. Contextualização e Recorte do Problema (Slide 3)

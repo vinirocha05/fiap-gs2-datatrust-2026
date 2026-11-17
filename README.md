@@ -1,4 +1,4 @@
-# FluxoSUS
+# FluxSUS
 
 Projeto CitizenTech de análise e previsão de internações hospitalares do SUS, com visualização em um dashboard Streamlit. A proposta busca apoiar o planejamento de recursos de saúde a partir de dados históricos do SIH/DATASUS.
 
@@ -102,6 +102,7 @@ Se necessário, rode os scripts a partir da raiz:
 ```bash
 venv/bin/python src/tratamento_dados/tratar_internacoes.py
 venv/bin/python src/tratamento_dados/tratar_aih_municipio.py
+venv/bin/python src/tratamento_dados/tratar_inmet.py
 ```
 
 No Windows PowerShell, substitua `venv/bin/python` por `.\venv\Scripts\python.exe`.

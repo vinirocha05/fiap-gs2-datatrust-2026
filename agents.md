@@ -5,7 +5,7 @@
 ## 1. Visão geral
 - **Trabalho:** Global Solution 2026/2 · FIAP · turma 2TSCO · tema **CitizenTech** (Data Science + inovação para resolver um problema real do cidadão).
 - **Área:** dados de saúde pública no Brasil (DATASUS).
-- **Projeto:** nome **A definir** (sugestões: SaúdePrev ou FluxoSUS) · Grupo: **A definir** · Aluno responsável: **A definir** · Prazo: **A definir**.
+- **Projeto:** **FluxSUS** · Grupo: **A definir** · Aluno responsável: **A definir** · Prazo: **A definir**.
 - **3 entregas:** (1) proposta executiva em PDF, (2) vídeo pitch ≤ 5 min, (3) entrega técnica de Machine Learning (.zip).
 
 ## 2. Fonte de verdade
@@ -105,10 +105,16 @@ requirements.txt           versões instaladas no venv
 - **2026-11-14** — Qualidade dos dados: zeros de UF/mês (Acre 2009-09 e 2026-08, Roraima 2026-08) são dado ausente, tratados como NaN no notebook. Roraima 2026-07 (515) parece mês incompleto. `-` do raw vira 0 no tratamento, mas em séries de UF isso é ausência.
 - **2026-11-14** — Criado app Streamlit em `app/`: escolha da UF, histórico com filtro de ano, previsão de 1 a 12 meses (Ridge treinada no app com todo o histórico, previsão recursiva, faixa de ~80% baseada no erro relativo de 1 passo no holdout, crescendo com √horizonte) e cartões de indicadores. Meses finais com valor < 40% da mediana dos 12 anteriores (ou vazios) são ignorados e o app avisa (Roraima jul/ago 2026, Acre ago/2026). Testado com `AppTest` (sem navegador: o browser automatizado não funciona neste ambiente). Fora do escopo por ora: ranking entre UFs, sazonalidade, mapa, qualidade do modelo e download CSV.
 - **2026-11-14** — Criada `src/eda/` (dois notebooks) e aba **Insights** no app. Achados: crescimento de 1,1% a.a. até 2019 e 6,0% a.a. desde 2021 (2025 = +19% sobre 2019); maior queda em abr/2020 (-18,9%); pico sazonal em mai/jul/ago/out e vale em fev/dez/jan; 5 UFs = 51% das internações; 96 municípios = 50%; 13% dos municípios sem internação em 2025 (base é pelo município da internação, não o de residência). Cuidados: há municípios homônimos em UFs diferentes (usar nome+UF ou código); ago e set/2026 estão incompletos no nível municipal; 2020 e 2021 ficam fora das médias sazonais. Nomes de município no CSV não têm acento. No app, `use_container_width`/`width="stretch"` varia entre versões do Streamlit (o Python global tinha a 1.45; use sempre o `venv`).
+- **2026-11-15** — Repositório clonado na pasta de trabalho; criado `venv/` com Python 3.12.3 e dependências do `requirements.txt`. O arquivo passou a registrar as versões resolvidas das dependências diretas e transitivas. Criado `.gitignore` para o ambiente virtual, caches de Python/notebooks e segredos do Streamlit. `pip check`, imports principais e smoke test do app via `AppTest` passaram.
+- **2026-11-16** — Criado `docs/relatorio_arquivos_projeto.md`, inventário dos arquivos e pastas por etapa. Notebooks foram inspecionados por cópias temporárias convertidas com `nbconvert`, sem modificar os originais ou instalar Jupytext.
+- **2026-11-16** — Reformatado `docs/requisitos_entrega.md` com hierarquia de títulos, listas e espaçamento; texto original preservado.
+- **2026-11-16** — Criado `README.md` como página inicial do repositório, com navegação relativa pelas etapas, tecnologias, limitações, preparo do ambiente e execução do dashboard.
+- **2026-11-16** — Definido o nome do projeto como **FluxSUS** e atualizado nos documentos e no título do dashboard Streamlit.
+- **2026-11-17** — Elaborado o plano mestre de integração em `docs/plano_implementacao_inmet.md`. Criado o pipeline automatizado de ingestão e agregação meteorológica em `src/tratamento_dados/tratar_inmet.py` (leitura em streaming de ZIPs anuais, agregação diária e mensal por UF, conversão para códigos IBGE). Executado e validado o piloto de 2024 e concluída com sucesso a consolidação histórica completa de 2008 a 2026 em `data/processed/inmet_uf_mensal.csv` (5.972 registros, 366.2 KB, cobrindo as 27 UFs). Integradas funções analíticas em `app/insights.py` e gráfico comparativo com correlações em `app/app.py`, validado com sucesso via `AppTest` (sem quebras no projeto original).
 
 ## 11. Pendências e dúvidas em aberto
-- [ ] Prazo, nome do grupo/projeto, aluno responsável.
+- [ ] Prazo, nome do grupo e aluno responsável.
 - [ ] Alvo do modelo e escopo geográfico (UF nacional vs. Grande SP/UPA/UBS).
-- [ ] Datasets adicionais para `data/` (INMET, IBGE, SIA/SIH detalhado).
+- [ ] Datasets adicionais para `data/` (INMET implementado; IBGE e SIA/SIH detalhado pendentes).
 - [x] Aprovação para `requirements.txt` e instalação de dependências.
 - [ ] Preencher "Parte 2: Pipeline" em `docs/contexto.md`.

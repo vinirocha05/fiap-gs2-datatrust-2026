@@ -27,7 +27,7 @@ O projeto parte de séries históricas agregadas de internações do SIH/DATASUS
 
 **Pasta:** `docs/`.
 
-- [`contexto.md`](contexto.md) — descreve a proposta FluxoSUS/SaúdePrev, público, problema, solução, arquitetura e cuidados éticos. A seção “Parte 2: Pipeline” ainda está pendente.
+- [`contexto.md`](contexto.md) — descreve a proposta FluxSUS, público, problema, solução, arquitetura e cuidados éticos. A seção “Parte 2: Pipeline” ainda está pendente.
 - [`requisitos_entrega.md`](requisitos_entrega.md) — enunciado e critérios para a proposta em PDF, vídeo pitch e entrega técnica de Machine Learning.
 - [`relatorio_arquivos_projeto.md`](relatorio_arquivos_projeto.md) — este inventário, organizado pelo fluxo de desenvolvimento.
 

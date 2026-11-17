@@ -123,3 +123,47 @@ def maior_municipio_por_uf(mu, ano=2025):
              .sort_values("valor", ascending=False).drop_duplicates("uf").set_index("uf"))
     maior["participacao"] = maior["valor"] / total_uf * 100
     return maior.sort_values("participacao", ascending=False)
+
+
+CSV_CLIMA = CSV_INTERNACOES.with_name("inmet_uf_mensal.csv")
+
+
+def carregar_clima():
+    """Lê a base meteorológica consolidada do INMET por UF e mês."""
+    if not CSV_CLIMA.exists():
+        return None
+    try:
+        return pd.read_csv(CSV_CLIMA, parse_dates=["data"])
+    except Exception:
+        return None
+
+
+def correlacao_clima_uf(df_internacoes, df_clima, codigo_uf):
+    """Calcula a correlação e a série combinada de internações e clima da UF."""
+    if df_clima is None or df_clima.empty:
+        return None, {}
+
+    sub_int = df_internacoes[df_internacoes["codigo_uf"] == codigo_uf].dropna(subset=["valor"])
+    sub_cli = df_clima[df_clima["codigo_uf"] == codigo_uf].dropna(subset=["temp_media"])
+
+    if sub_int.empty or sub_cli.empty:
+        return None, {}
+
+    comb = pd.merge(sub_int, sub_cli, on=["codigo_uf", "data"], how="inner").sort_values("data")
+    if len(comb) < 12:
+        return None, {}
+
+    # Exclui anos de pandemia para evitar distorções na correlação
+    comb_valida = comb[~comb["data"].dt.year.isin(ANOS_PANDEMIA)]
+
+    corr_temp_min = comb_valida["valor"].corr(comb_valida["temp_min_media"])
+    corr_temp_med = comb_valida["valor"].corr(comb_valida["temp_media"])
+    corr_umidade = comb_valida["valor"].corr(comb_valida["umidade_media"])
+
+    metricas = {
+        "corr_temp_min": corr_temp_min,
+        "corr_temp_med": corr_temp_med,
+        "corr_umidade": corr_umidade,
+    }
+    return comb, metricas
+

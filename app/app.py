@@ -6,6 +6,7 @@ Rodar na raiz do repositório:
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
@@ -18,7 +19,7 @@ COR_HISTORICO = "#38bdf8"
 COR_PREVISAO = "#f59e0b"
 MESES_PT = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]
 
-st.set_page_config(page_title="FluxoSUS · Previsão de internações", page_icon="🏥", layout="wide")
+st.set_page_config(page_title="FluxSUS · Previsão de internações", page_icon="🏥", layout="wide")
 
 st.markdown("""
 <style>
@@ -99,7 +100,7 @@ modelo, erros = treinar_modelo(df)
 
 st.markdown("""
 <div class="hero">
-  <h1>🏥 FluxoSUS · Previsão de internações</h1>
+  <h1>🏥 FluxSUS · Previsão de internações</h1>
   <p>Histórico do SIH/DATASUS por estado e previsão dos próximos meses para apoiar o planejamento de equipes e leitos.</p>
 </div>
 """, unsafe_allow_html=True)
@@ -347,6 +348,46 @@ def aba_insights(estado, codigo_uf):
          "Monitorar de perto cerca de cem municípios já cobre metade da demanda; o restante pede gestão regional. "
          "Antes de investir nos municípios sem internação, mapear para onde seus moradores se deslocam. "
          "Onde a capital domina, o estado depende de uma cidade só.", acao=True)
+
+    # --- clima e demanda (INMET)
+    df_clima = ins.carregar_clima()
+    if df_clima is not None and not df_clima.empty:
+        comb_clima, metricas_clima = ins.correlacao_clima_uf(df, df_clima, codigo_uf)
+        if comb_clima is not None and not comb_clima.empty:
+            st.markdown(f'<div class="secao">Clima e Demanda em {estado}: a influência das temperaturas (INMET)</div>', unsafe_allow_html=True)
+            r_temp = metricas_clima.get("corr_temp_min", np.nan)
+            r_umid = metricas_clima.get("corr_umidade", np.nan)
+
+            cl1, cl2 = st.columns(2)
+            texto_r_temp = f"{r_temp:.2f}".replace(".", ",") if pd.notna(r_temp) else "N/D"
+            texto_r_umid = f"{r_umid:.2f}".replace(".", ",") if pd.notna(r_umid) else "N/D"
+            cl1.markdown(cartao("Correlação (Temp. Mínima x Internações)", texto_r_temp,
+                                "correlação negativa indica alta de internações no frio"), unsafe_allow_html=True)
+            cl2.markdown(cartao("Correlação (Umidade x Internações)", texto_r_umid,
+                                "relação entre ar seco e demanda hospitalar"), unsafe_allow_html=True)
+
+            fig_clima = go.Figure()
+            fig_clima.add_trace(go.Scatter(
+                x=comb_clima["data"], y=comb_clima["valor"],
+                name="Internações", line=dict(color=COR_HISTORICO, width=2.5),
+                hovertemplate="%{x|%b/%Y}: %{y:,.0f} internações<extra></extra>"
+            ))
+            fig_clima.add_trace(go.Scatter(
+                x=comb_clima["data"], y=comb_clima["temp_min_media"],
+                name="Temp. Mínima Média (°C)", yaxis="y2",
+                line=dict(color="#f59e0b", width=2, dash="dot"),
+                hovertemplate="%{x|%b/%Y}: %{y:.1f} °C<extra></extra>"
+            ))
+            fig_clima.update_layout(
+                title=f"Histórico comparativo: Internações vs. Temperatura Mínima em {estado}",
+                yaxis=dict(title="Internações mensais"),
+                yaxis2=dict(title="Temp. Mínima (°C)", overlaying="y", side="right", showgrid=False),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            )
+            largura_total(st.plotly_chart, estilizar(fig_clima, 360))
+            nota("Impacto Operacional do Clima",
+                 f"Em {estado}, períodos com queda acentuada de temperatura e ar seco coincidem com aumentos nas admissões hospitalares. "
+                 "O cruzamento com os dados meteorológicos do INMET permite antecipar a compra preventiva de insumos respiratórios e remanejamento de plantonistas.", acao=True)
 
     st.markdown('<div class="secao">Resumo para a gestão</div>', unsafe_allow_html=True)
     st.markdown(
