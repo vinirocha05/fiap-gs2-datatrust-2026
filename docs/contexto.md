@@ -4,7 +4,7 @@ Organize os slides do template (`GS_2026_2_-_2TSCO_template.pptx`) seguindo a l�
 
 ### 1. Identificação e Nome do Projeto (Slides 1 e 2)
 
-- **Sugestão de Nome:** SaúdePrev ou FluxoSUS (acompanhado de um logotipo limpo)[cite: 2].
+- **Nome do projeto:** FluxSUS (acompanhado de um logotipo limpo)[cite: 2].
 - **Identificação:** Informar a turma, listar os integrantes em ordem alfabética (Nome completo + RM) e destacar o aluno responsável[cite: 2].
 
 ### 2. Contextualização e Recorte do Problema (Slide 3)
@@ -45,4 +45,19 @@ Organize os slides do template (`GS_2026_2_-_2TSCO_template.pptx`) seguindo a l�
 
 ---
 
-## Parte 2: Pipeline
+## Parte 2: Pipeline de Dados e Modelagem (Implementado)
+
+### 1. Ingestão e Tratamento (`src/tratamento_dados/`)
+- **DATASUS (SIH):** Conversão das matrizes originais (`data/raw/internacoes.csv` e `data/raw/aih_municio.csv`) para formato longo padronizado em `data/processed/internacoes_tratado.csv` (mensal por UF) e `data/processed/aih_municipio_tratado.csv` (mensal por município).
+- **INMET (Meteorologia):** Extração automatizada via streaming dos pacotes anuais históricos (2008 a 2026) de mais de 500 estações meteorológicas, com agregação diária e mensal por UF (`data/processed/inmet_uf_mensal.csv`, ~366 KB).
+
+### 2. Engenharia de Recursos e Modelagem Preditiva (`src/models/` e `app/previsao.py`)
+- **Variável-alvo:** Volume mensal de internações hospitalares por UF (`valor`).
+- **Estratégias Comparadas:**
+  1. **Baseline Inercial (Sem Clima):** Regressão Ridge sobre defasagens recentes (`lag_1`, `lag_2`, `lag_3`) e médias móveis (`media_3m`, `media_12m`).
+  2. **Modelo Refinado com Clima (INMET + Sazonalidade):** Regressão Ridge enriquecida com anomalias de frio, secura do ar, amplitude térmica e choque térmico ponderadas pelo porte hospitalar da UF (`media_12m`), reduzindo o erro absoluto médio (MAE) no holdout (2024–2026) de **1.762 para 1.452 internações/mês**.
+- **Correlação Dessazonalizada:** Isolamento da pressão sazonal (`desvio % sobre a média anual`) para remover o viés do crescimento demográfico de 18 anos, revelando forte correlação negativa entre temperatura mínima e internações ($r = -0,57$ mensal e $r = -0,76$ a $-0,86$ no ciclo anual no Centro-Sul).
+
+### 3. Visualização e Suporte à Decisão (`app/`)
+- **Dashboard Streamlit (`app/app.py`):** Organizado em 4 abas temáticas (`📈 Previsão`, `🌡️ Clima & INMET`, `🗺️ Municípios & Território` e `💡 Panorama Macro`), com suporte à visão nacional consolidada (`Brasil - Todos os estados`) e filtro temporal integrado.
+

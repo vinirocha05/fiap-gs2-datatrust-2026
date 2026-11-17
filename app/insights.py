@@ -123,3 +123,137 @@ def maior_municipio_por_uf(mu, ano=2025):
              .sort_values("valor", ascending=False).drop_duplicates("uf").set_index("uf"))
     maior["participacao"] = maior["valor"] / total_uf * 100
     return maior.sort_values("participacao", ascending=False)
+
+
+CSV_CLIMA = CSV_INTERNACOES.with_name("inmet_uf_mensal.csv")
+
+
+def carregar_clima():
+    """Lê a base meteorológica consolidada do INMET por UF e mês."""
+    if not CSV_CLIMA.exists():
+        return None
+    try:
+        return pd.read_csv(CSV_CLIMA, parse_dates=["data"])
+    except Exception:
+        return None
+
+
+def _adicionar_indice_sazonal(comb):
+    """Remove a tendência de crescimento secular (2008-2026) calculando o desvio %
+    de cada mês em relação à média do próprio ano (isolando o efeito sazonal/climático)."""
+    comb = comb.copy()
+    media_ano = comb.groupby(comb["data"].dt.year)["valor"].transform("mean")
+    comb["indice_sazonal"] = (comb["valor"] / media_ano - 1.0) * 100.0
+    return comb
+
+
+def correlacao_clima_uf(df_internacoes, df_clima, codigo_uf):
+    """Calcula a correlação dessazonalizada e a série combinada de internações e clima da UF."""
+    if df_clima is None or df_clima.empty:
+        return None, {}
+
+    cols_int = [c for c in ["codigo_uf", "data", "valor"] if c in df_internacoes.columns]
+    sub_int = df_internacoes[df_internacoes["codigo_uf"] == codigo_uf][cols_int].dropna(subset=["valor"])
+    sub_cli = df_clima[df_clima["codigo_uf"] == codigo_uf].dropna(subset=["temp_media"])
+
+    if sub_int.empty or sub_cli.empty:
+        return None, {}
+
+    comb = pd.merge(sub_int, sub_cli, on=["codigo_uf", "data"], how="inner").sort_values("data")
+    if len(comb) < 12:
+        return None, {}
+
+    comb = _adicionar_indice_sazonal(comb)
+
+    # Exclui anos de pandemia (2020/2021) para evitar distorções
+    comb_valida = comb[~comb["data"].dt.year.isin(ANOS_PANDEMIA)].copy()
+
+    # Correlação com o índice sazonal (sem o viés do crescimento demográfico de 18 anos)
+    corr_temp_min = comb_valida["indice_sazonal"].corr(comb_valida["temp_min_media"])
+    corr_temp_med = comb_valida["indice_sazonal"].corr(comb_valida["temp_media"])
+    corr_umidade = comb_valida["indice_sazonal"].corr(comb_valida["umidade_media"])
+
+    # Correlação no ciclo climatológico médio (12 meses)
+    ciclo = comb_valida.groupby(comb_valida["data"].dt.month)[["indice_sazonal", "temp_min_media"]].mean()
+    corr_ciclo = ciclo["indice_sazonal"].corr(ciclo["temp_min_media"])
+
+    metricas = {
+        "corr_temp_min": corr_temp_min,
+        "corr_temp_med": corr_temp_med,
+        "corr_umidade": corr_umidade,
+        "corr_ciclo": corr_ciclo,
+    }
+    return comb, metricas
+
+
+def perfil_mensal_clima(df_clima, codigo_uf):
+    """Calcula médias sazonais dos 12 meses do ano para o clima da UF."""
+    if df_clima is None or df_clima.empty:
+        return None
+    sub = df_clima[df_clima["codigo_uf"] == codigo_uf].copy()
+    if sub.empty:
+        return None
+    sub["mes"] = sub["data"].dt.month
+    return sub.groupby("mes").agg(
+        temp_media=("temp_media", "mean"),
+        temp_min_media=("temp_min_media", "mean"),
+        temp_max_media=("temp_max_media", "mean"),
+        umidade_media=("umidade_media", "mean"),
+        precipitacao_total=("precipitacao_total", "mean")
+    ).round(1)
+
+
+def correlacao_clima_brasil(df_internacoes, df_clima):
+    """Calcula a correlação dessazonalizada e a série combinada nacional."""
+    if df_clima is None or df_clima.empty:
+        return None, {}
+
+    cols_int = [c for c in ["codigo_uf", "data", "valor"] if c in df_internacoes.columns]
+    sub_int = df_internacoes[cols_int].dropna(subset=["valor"]).groupby("data")["valor"].sum().reset_index()
+
+    sub_cli = df_clima.groupby("data").agg(
+        temp_media=("temp_media", "mean"),
+        temp_min_media=("temp_min_media", "mean"),
+        umidade_media=("umidade_media", "mean"),
+        precipitacao_total=("precipitacao_total", "mean")
+    ).reset_index()
+
+    comb = pd.merge(sub_int, sub_cli, on="data", how="inner").sort_values("data")
+    if len(comb) < 12:
+        return None, {}
+
+    comb = _adicionar_indice_sazonal(comb)
+
+    comb_valida = comb[~comb["data"].dt.year.isin(ANOS_PANDEMIA)].copy()
+    corr_temp_min = comb_valida["indice_sazonal"].corr(comb_valida["temp_min_media"])
+    corr_temp_med = comb_valida["indice_sazonal"].corr(comb_valida["temp_media"])
+    corr_umidade = comb_valida["indice_sazonal"].corr(comb_valida["umidade_media"])
+
+    ciclo = comb_valida.groupby(comb_valida["data"].dt.month)[["indice_sazonal", "temp_min_media"]].mean()
+    corr_ciclo = ciclo["indice_sazonal"].corr(ciclo["temp_min_media"])
+
+    metricas = {
+        "corr_temp_min": corr_temp_min,
+        "corr_temp_med": corr_temp_med,
+        "corr_umidade": corr_umidade,
+        "corr_ciclo": corr_ciclo,
+    }
+    return comb, metricas
+
+
+def perfil_mensal_clima_brasil(df_clima):
+    """Calcula médias sazonais dos 12 meses do ano agregadas para todo o Brasil."""
+    if df_clima is None or df_clima.empty:
+        return None
+    sub = df_clima.copy()
+    sub["mes"] = sub["data"].dt.month
+    return sub.groupby("mes").agg(
+        temp_media=("temp_media", "mean"),
+        temp_min_media=("temp_min_media", "mean"),
+        temp_max_media=("temp_max_media", "mean"),
+        umidade_media=("umidade_media", "mean"),
+        precipitacao_total=("precipitacao_total", "mean")
+    ).round(1)
+
+
+
