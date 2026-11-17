@@ -1,8 +1,8 @@
 # FluxSUS
 
-Projeto CitizenTech de análise e previsão de internações hospitalares do SUS, com visualização em um dashboard Streamlit. A proposta busca apoiar o planejamento de recursos de saúde a partir de dados históricos do SIH/DATASUS.
+Projeto CitizenTech de análise e previsão de internações hospitalares do SUS, integrando séries históricas do **SIH/DATASUS** com dados meteorológicos das estações do **INMET** em um dashboard interativo em Streamlit.
 
-> **Escopo atual:** as bases disponíveis registram internações hospitalares por estado e município. Elas não medem diretamente filas ou lotação de UPAs e UBSs. Dados do INMET, IBGE e unidades de atendimento ainda não estão integrados ao pipeline.
+> **Escopo atual:** as bases disponíveis registram internações hospitalares por estado e município (SIH/DATASUS) cruzadas com séries climáticas mensais por UF (INMET, 2008 a 2026). Elas funcionam como indicador de pressão assistencial sobre o sistema de saúde. Dados demográficos do IBGE e lotação em tempo real de UPAs/UBSs permanecem como evolução futura.
 
 ## Por onde começar
 
@@ -27,13 +27,14 @@ Os arquivos em [`data/raw/`](data/raw/) são as fontes originais e não devem se
 
 ### 2. Tratamento
 
-Os scripts convertem os CSVs originais do formato largo para o formato longo e salvam os resultados em [`data/processed/`](data/processed/):
+Os scripts convertem os CSVs originais do formato largo para o formato longo, extraem séries meteorológicas e salvam os resultados em [`data/processed/`](data/processed/):
 
 - [`utils_tratamento.py`](src/tratamento_dados/utils_tratamento.py) — funções compartilhadas de leitura, limpeza e transformação.
 - [`tratar_internacoes.py`](src/tratamento_dados/tratar_internacoes.py) — prepara os dados por UF.
 - [`tratar_aih_municipio.py`](src/tratamento_dados/tratar_aih_municipio.py) — prepara os dados por município.
+- [`tratar_inmet.py`](src/tratamento_dados/tratar_inmet.py) — baixa e agrega em streaming os dados meteorológicos históricos do INMET (2008 a 2026) por UF e mês.
 
-As saídas são [`internacoes_tratado.csv`](data/processed/internacoes_tratado.csv) e [`aih_municipio_tratado.csv`](data/processed/aih_municipio_tratado.csv).
+As saídas são [`internacoes_tratado.csv`](data/processed/internacoes_tratado.csv), [`aih_municipio_tratado.csv`](data/processed/aih_municipio_tratado.csv) e [`inmet_uf_mensal.csv`](data/processed/inmet_uf_mensal.csv).
 
 ### 3. Análise exploratória
 
@@ -48,9 +49,9 @@ Os notebooks descrevem padrões e limitações das bases:
 
 ### 5. Dashboard
 
-- [`app.py`](app/app.py) — interface Streamlit com as abas **Previsão** e **Insights**.
-- [`previsao.py`](app/previsao.py) — preparação dos dados e cálculo das previsões.
-- [`insights.py`](app/insights.py) — cálculos apresentados na aba de insights.
+- [`app.py`](app/app.py) — interface Streamlit com 4 abas temáticas (**Previsão**, **Clima & INMET**, **Municípios & Território** e **Panorama Macro**), suporte a visão nacional consolidada e identidade visual (`app/assets/logo_fluxsus.png`).
+- [`previsao.py`](app/previsao.py) — preparação dos dados e comparação preditiva entre o Modelo com Clima (INMET) e o Baseline Inercial.
+- [`insights.py`](app/insights.py) — cálculos analíticos, correlações climáticas dessazonalizadas e estatísticas territoriais.
 
 ## Tecnologias
 

@@ -45,6 +45,7 @@ O projeto parte de séries históricas agregadas de internações do SIH/DATASUS
 - [`utils_tratamento.py`](../src/tratamento_dados/utils_tratamento.py) — funções compartilhadas para leitura e limpeza dos CSVs, identificação de colunas mensais, conversão de valores e transformação do formato largo para longo.
 - [`tratar_internacoes.py`](../src/tratamento_dados/tratar_internacoes.py) — normaliza as UFs, remove a linha de total, transforma os meses em registros e salva a base tratada por UF.
 - [`tratar_aih_municipio.py`](../src/tratamento_dados/tratar_aih_municipio.py) — separa código e nome dos municípios, deriva UF, transforma os meses em registros e salva a base tratada municipal.
+- [`tratar_inmet.py`](../src/tratamento_dados/tratar_inmet.py) — realiza download em streaming dos pacotes anuais históricos do INMET (2008 a 2026), processa as medições horárias e agrega mensalmente por UF.
 - [`t.ipynb`](../src/tratamento_dados/t.ipynb) — notebook exploratório antigo, útil como referência do início do tratamento. Ele tenta ler `data_sus2.csv`, arquivo que não aparece no inventário atual; os scripts acima são o fluxo de tratamento vigente.
 
 ## 5. Bases preparadas para análise
@@ -53,6 +54,7 @@ O projeto parte de séries históricas agregadas de internações do SIH/DATASUS
 
 - [`internacoes_tratado.csv`](../data/processed/internacoes_tratado.csv) — formato longo com `codigo_uf`, `estado`, `data` e `valor`; 6.048 registros, até ago/2026.
 - [`aih_municipio_tratado.csv`](../data/processed/aih_municipio_tratado.csv) — formato longo com `codigo_municipio`, `municipio`, `codigo_uf`, `uf`, `data` e `valor`; 814.275 registros, até set/2026.
+- [`inmet_uf_mensal.csv`](../data/processed/inmet_uf_mensal.csv) — base meteorológica mensal por UF (2008 a out/2026), contendo temperaturas média/mínima/máxima, umidade, precipitação e amplitude térmica; 5.972 registros (~366 KB).
 
 Nos CSVs originais, `-` e campos vazios são convertidos em zero pelo tratamento. Para a série por UF, o app/modelo interpreta zeros como ausências em determinadas análises; essa diferença deve ser considerada ao alterar a limpeza.
 
@@ -73,11 +75,11 @@ Nos CSVs originais, `-` e campos vazios são convertidos em zero pelo tratamento
 
 **Pasta:** `app/`.
 
-- [`app.py`](../app/app.py) — interface Streamlit. Reúne as abas **Previsão** e **Insights**, filtros de estado/horizonte/período, indicadores, gráficos e tabelas.
-- [`previsao.py`](../app/previsao.py) — carrega os dados por UF, constrói as variáveis defasadas e médias móveis, treina o Ridge, gera previsões recursivas e calcula indicadores e faixa aproximada de incerteza.
-- [`insights.py`](../app/insights.py) — funções analíticas da aba Insights: totais, sazonalidade, crescimento, concentração e estatísticas municipais.
+- [`app.py`](../app/app.py) — interface Streamlit organizada em 4 abas (**Previsão**, **Clima & INMET**, **Municípios & Território** e **Panorama Macro**), com opção de visão consolidada nacional (`Brasil - Todos os estados`), cartões padronizados e logo institucional (`app/assets/logo_fluxsus.png`).
+- [`previsao.py`](../app/previsao.py) — carrega os dados por UF e do INMET, constrói as interações climáticas ponderadas pela escala hospitalar, treina o Ridge (com clima vs. baseline inercial) e gera projeções recursivas.
+- [`insights.py`](../app/insights.py) — funções analíticas: correlações climáticas dessazonalizadas, perfil climatológico, totais, sazonalidade, crescimento e estatísticas municipais.
 
-O app usa internações hospitalares do SIH como aproximação da pressão sobre o sistema. Isso **não mede diretamente a lotação ou a fila de UPAs/UBSs**. As bases de INMET, IBGE e dados operacionais de UPA/UBS ainda não aparecem em `data/`.
+O app usa internações hospitalares do SIH cruzadas com dados meteorológicos do INMET como aproximação da pressão sobre o sistema. Bases demográficas do IBGE e dados operacionais em tempo real de UPA/UBS permanecem como evolução futura.
 
 ## 9. Arquivos gerados automaticamente
 
